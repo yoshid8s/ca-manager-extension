@@ -34,6 +34,7 @@ require_once __DIR__ . '/includes/class-cam-ad-db.php';
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/admin-ad-content.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/context-ads.php';
+require_once plugin_dir_path( __FILE__ ) . 'includes/rest-context-ads.php';
 require_once plugin_dir_path( __FILE__ ) . 'includes/front-ad-insert.php';
 
 require_once __DIR__ . '/includes/front-assigned-ad.php';
