@@ -4,7 +4,7 @@
  *
  * Plugin Name: CA Manager Extended Edition (Unofficial)
  * Description: WordPress での記事公開時の Content Attestation (CA) 発行を支援するプラグインです。投稿編集画面で記事CA・広告CA・埋め込みコンテンツCAを一元管理できます。本バージョンでの広告CAおよび埋め込みコンテンツCAは、発信者による自己申告に基づくものであり、第三者コンテンツの真正性を保証するものではありません。
- * Version: 0.4.8-x-share
+ * Version: 0.4.9-x-context-ad
  * Author: Originator Profile Collaborative Innovation Partnership
  * Author URI: https://originator-profile.org/
  * License: MIT
