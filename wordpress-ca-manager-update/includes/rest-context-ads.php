@@ -54,6 +54,80 @@ function cam_register_context_ad_rest_routes() {
 add_action( 'rest_api_init', 'cam_register_context_ad_rest_routes' );
 
 /**
+ * 現在表示するコンテキスト広告に一致する、発行済み広告CAを返す。
+ *
+ * 投稿に保存されるCAには記事CAなども含まれるため、OnlineAd・配置ごとの
+ * CSSセレクター・画像・遷移先がすべて一致するものだけを公開する。
+ *
+ * @return string
+ */
+function cam_get_issued_context_ad_ca( $post_id, $placement, array $ad ) {
+	$selector    = '#cam-context-ad-' . $placement . '-' . $post_id;
+	$destination = isset( $ad['destination'] ) ? esc_url_raw( (string) $ad['destination'] ) : '';
+	$image       = isset( $ad['image'] ) ? esc_url_raw( (string) $ad['image'] ) : '';
+	$post_cas    = get_post_meta( $post_id, '_profile_post_cas', true );
+
+	if ( ! is_array( $post_cas ) || '' === $destination || '' === $image ) {
+		return '';
+	}
+
+	foreach ( $post_cas as $cas_jwt ) {
+		if ( ! is_string( $cas_jwt ) || '' === $cas_jwt ) {
+			continue;
+		}
+
+		$parts = explode( '.', $cas_jwt );
+
+		if ( 3 !== count( $parts ) || '' === $parts[1] ) {
+			continue;
+		}
+
+		$payload_part = strtr( $parts[1], '-_', '+/' );
+		$payload_part .= str_repeat( '=', ( 4 - strlen( $payload_part ) % 4 ) % 4 );
+		$payload      = json_decode( base64_decode( $payload_part ), true );
+
+		if ( ! is_array( $payload ) ) {
+			continue;
+		}
+
+		$subject = isset( $payload['credentialSubject'] ) && is_array( $payload['credentialSubject'] )
+			? $payload['credentialSubject']
+			: array();
+
+		if ( 'OnlineAd' !== ( $subject['type'] ?? '' ) ) {
+			continue;
+		}
+
+		$cas_destination = isset( $subject['landingPageUrl'] )
+			? esc_url_raw( (string) $subject['landingPageUrl'] )
+			: '';
+		$cas_image = isset( $subject['image']['id'] )
+			? esc_url_raw( (string) $subject['image']['id'] )
+			: '';
+
+		if ( $destination !== $cas_destination || $image !== $cas_image ) {
+			continue;
+		}
+
+		$targets = isset( $payload['target'] ) && is_array( $payload['target'] )
+			? $payload['target']
+			: array();
+
+		foreach ( $targets as $target ) {
+			if (
+				is_array( $target ) &&
+				'ExternalResourceTargetIntegrity' === ( $target['type'] ?? '' ) &&
+				$selector === ( $target['cssSelector'] ?? '' )
+			) {
+				return $cas_jwt;
+			}
+		}
+	}
+
+	return '';
+}
+
+/**
  * @return WP_REST_Response|WP_Error
  */
 function cam_rest_get_context_ad( WP_REST_Request $request ) {
@@ -114,6 +188,7 @@ function cam_rest_get_context_ad( WP_REST_Request $request ) {
 					)
 					: '',
 				'genre'       => isset( $ad['genre'] ) ? (string) $ad['genre'] : '',
+				'cas'         => cam_get_issued_context_ad_ca( $post_id, $placement, $ad ),
 			),
 		)
 	);
